@@ -2,11 +2,13 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: prometheus
-    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
       - "9090:9090"
+    restart: unless-stopped
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus:/etc/prometheus
       - prometheus-data:/prometheus
     networks:
       -  monitoring_network

@@ -1,0 +1,28 @@
+# ---
+# - name: Update packages on Fedora Server 40
+#   hosts: icy_fedor_host
+#   become: true
+#   tasks:
+#     - name: Ensure the system is up to date
+#       dnf:
+#         name: '*'
+#         state: latest
+
+#     - name: Clean DNF cache
+#       dnf:
+#         name: '*'
+#         state: latest
+#         update_cache: yes
+
+---
+- name: Update packages on CentOS 7
+  hosts: icytech_host
+  become: true
+  tasks:
+    - name: Ensure the system is up to date
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Clean YUM cache
+      command: yum clean all

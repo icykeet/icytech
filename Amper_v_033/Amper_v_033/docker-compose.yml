@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - app_network
+      - monitoring_network
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+
+  # Database for API Gateway
+  db:
+    container_name: gateway-docker
+    image: postgres:14.1-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - '4000:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  # Prometheus Monitoring Service
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.listen-address=:9095'
+    ports:
+      - "9095:9095"
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring_network
+
+  # Grafana Monitoring Dashboard
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - monitoring_network
+
+  # Node Exporter for System Metrics
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring_network
+
+  # cAdvisor for Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    command:
+      - "--port=8085"
+    ports:
+      - "8085:8085"
+    volumes:
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring_network
+
+networks:
+  app_network:
+    driver: bridge
+  monitoring_network:
+    driver: bridge
+
+volumes:
+  db:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
